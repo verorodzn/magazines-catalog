@@ -2,34 +2,52 @@ import csv
 import json
 import os
 
-def convertir_csv_a_json(carpeta_csv, archivo_salida_json):
+def crear_diccionario_revistas(carpeta_csv_areas, carpeta_csv_catalogos, archivo_salida_json):
+    revistas = {}
 
-    datos = []
-
-    #Lee toda la carpeta :o
-    for archivo in os.listdir(carpeta_csv):
+    # Leer los archibos de "áreas" :o
+    for archivo in os.listdir(carpeta_csv_areas):
         if archivo.endswith('.csv'):
-            ruta_archivo = os.path.join(carpeta_csv, archivo)
+            ruta_archivo = os.path.join(carpeta_csv_areas, archivo)
             with open(ruta_archivo, mode='r', encoding='latin-1') as archivo_csv:
                 lector_csv = csv.DictReader(archivo_csv)
                 for fila in lector_csv:
-                    datos.append(fila)
-                    
+                    titulo = fila['TITULO:'].strip().lower()
+                    area = fila['TITULO:'].strip()
+                    if titulo not in revistas:
+                        revistas[titulo] = {"areas": [], "catalogos": []}
+                    if area not in revistas[titulo]["areas"]:
+                        revistas[titulo]["areas"].append(area)
 
-    #Escribir JSON uwu
+    # Leer archivos de "catálogos" :o
+    for archivo in os.listdir(carpeta_csv_catalogos):
+        if archivo.endswith('.csv'):
+            ruta_archivo = os.path.join(carpeta_csv_catalogos, archivo)
+            with open(ruta_archivo, mode='r', encoding='latin-1') as archivo_csv:
+                lector_csv = csv.DictReader(archivo_csv)
+                for fila in lector_csv:
+                    titulo = fila['TITULO:'].strip().lower()
+                    catalogo = fila['TITULO:'].strip()
+                    if titulo not in revistas:
+                        revistas[titulo] = {"areas": [], "catalogos": []}
+                    if catalogo not in revistas[titulo]["catalogos"]:
+                        revistas[titulo]["catalogos"].append(catalogo)
+
+    # Escribir el diccionario en un archivo JSON ezzzz :)
     with open(archivo_salida_json, mode='w', encoding='utf-8') as archivo_json:
-        json.dump(datos, archivo_json, indent=4, ensure_ascii=False)
+        json.dump(revistas, archivo_json, indent=4, ensure_ascii=False)
 
 def main():
-    #Ruta de la carpeta de los CSV :o
-    carpeta_csv = r'C:\Users\josea\OneDrive\Documentos\Escritorio\Desarrollo IV\datos\csv'
+    # Rutas de las carpetas de los csv -.-
+    carpeta_csv_areas = r'C:\Users\josea\OneDrive\Documentos\Escritorio\Desarrollo IV\datos\csv\areas'
+    carpeta_csv_catalogos = r'C:\Users\josea\OneDrive\Documentos\Escritorio\Desarrollo IV\datos\csv\catalogos'
 
-    #Salida del JASON :o
-    archivo_salida_json = r'C:\Users\josea\OneDrive\Documentos\Escritorio\Desarrollo IV\proyectoDS4\datosconvertidos.json'
+    # Salida del jason :o
+    archivo_salida_json = r'C:\Users\josea\OneDrive\Documentos\Escritorio\Desarrollo IV\datos\json\revistas.json'
 
-    convertir_csv_a_json(carpeta_csv, archivo_salida_json)
+    # Crear el diccionario de revistas y guardarlo como juson :o
+    crear_diccionario_revistas(carpeta_csv_areas, carpeta_csv_catalogos, archivo_salida_json)
     print(f"Archivo JSON creado en: {archivo_salida_json}")
-
 
 if __name__ == "__main__":
     main()
