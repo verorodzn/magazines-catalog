@@ -165,9 +165,13 @@ def main():
         key = titulo.lower().strip()
         if key in cache and not should_update(cache[key], args.expire):
             continue
-        # Si el título no está en el cache o ha expirado, se scrapea
-        # y se actualiza el cache
-        resultado = scrape_revista(titulo)
+        try:
+            resultado = scrape_revista(titulo, args.max_retries)
+        except Exception as e:
+            logging.warning(f'Salteando "{titulo}" tras errores: {e}')
+            continue
+        # Si el resultado es un diccionario vacío, se omite
+        # Si el resultado es un diccionario con datos, se guarda
         if resultado:
             # Si se scrapeó con éxito, se actualiza el cache
             cache[key] = resultado
