@@ -86,3 +86,23 @@ def scrape_revista(titulo: str) -> dict:
     perfil_resp.raise_for_status()
     # Verifica si la respuesta contiene el perfil de la revista
     psoup = BeautifulSoup(perfil_resp.text, 'html.parser')
+
+    try:
+        # Extrae los datos del perfil de la revista
+        datos = {
+            'sitio_web'             : psoup.select_one('a.journalImageLink')['href'],
+            'h_index'               : int(psoup.select_one('.hindex .value').text.strip()),
+            'subject_areas'         : [e.text.strip() for e in psoup.select('.subject_area .category')],
+            'publisher'             : psoup.select_one('.publisher .value').text.strip(),
+            'issn'                  : psoup.select_one('.issn .value').text.strip(),
+            'widget'                : psoup.select_one('#widget_code').text.strip(),
+            'publication_type'      : psoup.select_one('.pub_type .value').text.strip(),
+            'ultima_visita'         : date.today().isoformat(),
+        }
+    except Exception as e:
+        # Si ocurre un error al parsear el perfil, se registra el error y se devuelve un diccionario vacío
+        logging.error(f'Error parseando perfil de {titulo}: {e}')
+        return {}
+
+    return datos
+
