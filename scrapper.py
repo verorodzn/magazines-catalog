@@ -43,7 +43,7 @@ def parse_args():
         help = 'Días para considerar una entrada desactualizada y volver a scrapearla'
     )
     parser.add_argument(
-        '--expire', type = int, default = 5,
+        '--max_retries', type = int, default = 5,
         help = 'Número máximo de intentos ante errores temporales'
     )
     return parser.parse_args()
