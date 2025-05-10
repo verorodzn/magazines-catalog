@@ -5,12 +5,28 @@ Scrapper de SCImago que lee un JSON con revistas (título —> areas/catalogos) 
 
 import json
 import logging
+import time
+import random
 from datetime import date, timedelta
 from pathlib import Path
 import argparse
 import requests
 from bs4 import BeautifulSoup
 from tqdm import tqdm
+
+# Header para las solicitudes HTTP
+# Se utiliza un User-Agent para simular un navegador
+HEADERS = {
+    'User-Agent': (
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+      'AppleWebKit/537.36 (KHTML, like Gecko)'
+      'Chrome/58.0.3029.110 Safari/537.3'
+    )
+}
+
+# Agregar un retraso aleatorio entre 1 y 3 segundos
+# para evitar ser bloqueado por el servidor
+THROTTLE_MIN, THROTTLE_MAX = 1, 3
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Scrapper de SCImago')
