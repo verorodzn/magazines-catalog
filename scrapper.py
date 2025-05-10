@@ -65,6 +65,24 @@ def scrape_revista(titulo: str) -> dict:
     '''Scrapea datos de SCImago para la revista dada.'''
     # Buscador de SCImago
     buscador = f'https://www.scimagojr.com/journalsearch.php?q={requests.utils.quote(titulo)}'
+    # Realiza la búsqueda
     resp = requests.get(buscador, timeout=15)
+    # Verifica si la respuesta fue exitosa
     resp.raise_for_status()
+    # Verifica si la búsqueda devolvió resultados
     soup = BeautifulSoup(resp.text, 'html.parser')
+    # Busca el primer resultado
+    # Si no hay resultados, devuelve un diccionario vacío
+    enlace = soup.select_one('a[href*="journal.php?"]')
+    if not enlace or 'href' not in enlace.attrs:
+        logging.warning(f'No se encontró perfil para: {titulo}')
+        return {}
+
+    # Extrae el enlace al perfil de la revista
+    perfil_url = 'https://www.scimagojr.com/' + enlace['href']
+    # Realiza la solicitud al perfil de la revista
+    perfil_resp = requests.get(perfil_url, timeout=15)
+    # Verifica si la respuesta fue exitosa
+    perfil_resp.raise_for_status()
+    # Verifica si la respuesta contiene el perfil de la revista
+    psoup = BeautifulSoup(perfil_resp.text, 'html.parser')
