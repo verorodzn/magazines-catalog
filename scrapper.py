@@ -1,6 +1,7 @@
 '''
 SCRAPPER.PY
 Scrapper de SCImago que lee un JSON con revistas (título —> areas/catalogos) y extrae metadatos.
+COMPLETADO 100% FUNCIONAL YIPPIEEE :3
 '''
 
 import json
