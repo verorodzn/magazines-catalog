@@ -39,11 +39,11 @@ def crear_diccionario_revistas(carpeta_csv_areas, carpeta_csv_catalogos, archivo
 
 def main():
     # Rutas de las carpetas de los csv -.-
-    carpeta_csv_areas = r'datos\csv\areas'
-    carpeta_csv_catalogos = r'datos\csv\catalogos'
+    carpeta_csv_areas = r'datos/csv/areas'
+    carpeta_csv_catalogos = r'datos/csv/catalogos'
 
     # Salida del jason :o
-    archivo_salida_json = r'datos\json\revistas.json'
+    archivo_salida_json = r'datos/json/revistas.json'
 
     # Crear el diccionario de revistas y guardarlo como juson :o
     crear_diccionario_revistas(carpeta_csv_areas, carpeta_csv_catalogos, archivo_salida_json)
