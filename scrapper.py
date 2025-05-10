@@ -107,6 +107,7 @@ def scrape_revista(titulo: str) -> dict:
     return datos
 
 def main():
+    '''Función principal del scrapper.'''
     args = parse_args()
     logging.basicConfig(
         level=logging.INFO,
@@ -119,14 +120,20 @@ def main():
     base = load_json(input_path)
     logging.info(f'Cargadas {len(base)} revistas desde {input_path}')
 
+    # Si el archivo de salida no existe, se crea un diccionario vacío
     cache = load_json(output_path)
 
     for titulo in tqdm(base.keys(), desc='Revistas'):
+        # Si el título ya está en el cache y no ha expirado, se omite
+        # Si el título no está en el cache, se scrapea
         key = titulo.lower().strip()
         if key in cache and not should_update(cache[key], args.expire):
             continue
+        # Si el título no está en el cache o ha expirado, se scrapea
+        # y se actualiza el cache
         resultado = scrape_revista(titulo)
         if resultado:
+            # Si se scrapeó con éxito, se actualiza el cache
             cache[key] = resultado
             save_json(cache, output_path)
 
@@ -134,4 +141,5 @@ def main():
 
 
 if __name__ == '__main__':
+    # Al ejecutar, se llama a la función principal
     main()
