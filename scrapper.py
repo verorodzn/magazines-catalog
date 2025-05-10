@@ -106,3 +106,32 @@ def scrape_revista(titulo: str) -> dict:
 
     return datos
 
+def main():
+    args = parse_args()
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s %(levelname)s: %(message)s'
+    )
+
+    input_path = Path(args.input)
+    output_path = Path(args.output)
+
+    base = load_json(input_path)
+    logging.info(f'Cargadas {len(base)} revistas desde {input_path}')
+
+    cache = load_json(output_path)
+
+    for titulo in tqdm(base.keys(), desc='Revistas'):
+        key = titulo.lower().strip()
+        if key in cache and not should_update(cache[key], args.expire):
+            continue
+        resultado = scrape_revista(titulo)
+        if resultado:
+            cache[key] = resultado
+            save_json(cache, output_path)
+
+    logging.info('Scraping completado.')
+
+
+if __name__ == '__main__':
+    main()
