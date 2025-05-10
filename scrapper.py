@@ -108,28 +108,20 @@ def get_with_retries(url: str, max_tries: int) -> requests.Response:
 
 def scrape_revista(titulo: str) -> dict:
     '''Scrapea datos de SCImago para la revista dada.'''
+    # Throttle para evitar ser bloqueado
+    time.sleep(random.uniform(THROTTLE_MIN, THROTTLE_MAX))
     # Buscador de SCImago
-    buscador = f'https://www.scimagojr.com/journalsearch.php?q={requests.utils.quote(titulo)}'
-    # Realiza la búsqueda
-    resp = requests.get(buscador, timeout=15)
-    # Verifica si la respuesta fue exitosa
-    resp.raise_for_status()
-    # Verifica si la búsqueda devolvió resultados
+    query = requests.utils.quote(titulo)
+    url_busqueda = f'https://www.scimagojr.com/journalsearch.php?q={query}'
+    resp = get_with_retries(url_busqueda, max_retries)
     soup = BeautifulSoup(resp.text, 'html.parser')
-    # Busca el primer resultado
-    # Si no hay resultados, devuelve un diccionario vacío
     enlace = soup.select_one('a[href*="journal.php?"]')
     if not enlace or 'href' not in enlace.attrs:
-        logging.warning(f'No se encontró perfil para: {titulo}')
+        logging.warning(f'No perfil para "{titulo}"')
         return {}
-
     # Extrae el enlace al perfil de la revista
     perfil_url = 'https://www.scimagojr.com/' + enlace['href']
-    # Realiza la solicitud al perfil de la revista
-    perfil_resp = requests.get(perfil_url, timeout=15)
-    # Verifica si la respuesta fue exitosa
-    perfil_resp.raise_for_status()
-    # Verifica si la respuesta contiene el perfil de la revista
+    perfil_resp = get_with_retries(perfil_url, max_retries)
     psoup = BeautifulSoup(perfil_resp.text, 'html.parser')
 
     try:
@@ -144,12 +136,11 @@ def scrape_revista(titulo: str) -> dict:
             'publication_type'      : psoup.select_one('.pub_type .value').text.strip(),
             'ultima_visita'         : date.today().isoformat(),
         }
+        return datos
     except Exception as e:
         # Si ocurre un error al parsear el perfil, se registra el error y se devuelve un diccionario vacío
         logging.error(f'Error parseando perfil de {titulo}: {e}')
         return {}
-
-    return datos
 
 def main():
     '''Función principal del scrapper.'''
