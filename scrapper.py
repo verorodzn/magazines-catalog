@@ -42,9 +42,13 @@ def parse_args():
         '--expire', type = int, default = 30,
         help = 'Días para considerar una entrada desactualizada y volver a scrapearla'
     )
+    parser.add_argument(
+        '--expire', type = int, default = 5,
+        help = 'Número máximo de intentos ante errores temporales'
+    )
     return parser.parse_args()
 
-def load_json(path: Path):
+def load_json(path: Path) -> dict:
     '''Carga un archivo JSON y lo convierte en un diccionario.'''
     # Si el archivo no existe, devuelve un diccionario vacío
     # Si existe, lo carga y lo devuelve
@@ -54,7 +58,7 @@ def load_json(path: Path):
     return {}
 
 
-def save_json(data: dict, path: Path):
+def save_json(data: dict, path: Path) -> None:
     '''Guarda un diccionario en un archivo JSON.'''
     # Crea el directorio si no existe
     # y guarda el archivo en formato JSON
@@ -76,6 +80,31 @@ def should_update(entry: dict, days: int) -> bool:
         return True
     return (date.today() - ultima_fecha) > timedelta(days=days)
 
+def get_with_retries(url: str, max_tries: int) -> requests.Response:
+    '''Realiza una solicitud HTTP con reintentos ante errores temporales.'''
+    delay = 1.0
+    for intento in range(1, max_tries + 1):
+        try:
+            resp = requests.get(url, headers=HEADERS, timeout=15)
+            resp.raise_for_status()
+            return resp
+        except requests.exceptions.HTTPError as e:
+            status = getattr(e.response, 'status_code', None)
+            # Si es 503 y aún quedan intentos, esperamos y reintentamos
+            if status == 503 and intento < max_tries:
+                logging.warning(f'503 en {url}, retry {intento}/{max_tries} tras {delay:.1f}s')
+                time.sleep(delay)
+                delay *= 2
+                continue
+            raise
+        except requests.exceptions.RequestException as e:
+            # Para otros fallos de red, si hay intentos restantes
+            if intento < max_tries:
+                logging.warning(f'Error red en {url}: {e}, retry {intento}/{max_tries} tras {delay:.1f}s')
+                time.sleep(delay)
+                delay *= 2
+                continue
+            raise
 
 def scrape_revista(titulo: str) -> dict:
     '''Scrapea datos de SCImago para la revista dada.'''
