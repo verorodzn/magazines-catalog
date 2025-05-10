@@ -27,3 +27,44 @@ def parse_args():
         help = 'Días para considerar una entrada desactualizada y volver a scrapearla'
     )
     return parser.parse_args()
+
+def load_json(path: Path):
+    '''Carga un archivo JSON y lo convierte en un diccionario.'''
+    # Si el archivo no existe, devuelve un diccionario vacío
+    # Si existe, lo carga y lo devuelve
+    if path.exists():
+        with path.open(encoding='utf-8') as f:
+            return json.load(f)
+    return {}
+
+
+def save_json(data: dict, path: Path):
+    '''Guarda un diccionario en un archivo JSON.'''
+    # Crea el directorio si no existe
+    # y guarda el archivo en formato JSON
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open('w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+def should_update(entry: dict, days: int) -> bool:
+    '''Determina si la entrada debe ser actualizada.'''
+    # Si no hay fecha de última visita, se considera que debe actualizarse
+    # Si la fecha de última visita es mayor a los días especificados, se considera que debe actualizarse
+    ultima = entry.get('ultima_visita')
+    if not ultima:
+        return True
+    try:
+        ultima_fecha = date.fromisoformat(ultima)
+    except ValueError:
+        return True
+    return (date.today() - ultima_fecha) > timedelta(days=days)
+
+
+def scrape_revista(titulo: str) -> dict:
+    '''Scrapea datos de SCImago para la revista dada.'''
+    # Buscador de SCImago
+    buscador = f'https://www.scimagojr.com/journalsearch.php?q={requests.utils.quote(titulo)}'
+    resp = requests.get(buscador, timeout=15)
+    resp.raise_for_status()
+    soup = BeautifulSoup(resp.text, 'html.parser')
