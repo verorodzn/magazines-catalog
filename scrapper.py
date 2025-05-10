@@ -107,7 +107,7 @@ def get_with_retries(url: str, max_tries: int) -> requests.Response:
                 continue
             raise
 
-def scrape_revista(titulo: str) -> dict:
+def scrape_revista(titulo: str, max_retries: int) -> dict:
     '''Scrapea datos de SCImago para la revista dada.'''
     # Throttle para evitar ser bloqueado
     time.sleep(random.uniform(THROTTLE_MIN, THROTTLE_MAX))
