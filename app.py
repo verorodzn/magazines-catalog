@@ -65,7 +65,7 @@ def home():
             mag for mag in all_magazines
             if (query in mag.title.lower()) or 
                (query in mag.area.lower()) or 
-               (query in mag.category.lower()) or
+               (query in mag.catalog.lower()) or
                (query in mag.publisher.lower()) or  
                (query in mag.issn.lower()) or
                (query in mag.publication_type.lower())
@@ -158,7 +158,7 @@ def area_detail(area_title):
         filtered_magazines = [
             mag for mag in filtered_magazines
             if (query in mag.title.lower()) or 
-               (query in mag.category.lower()) or
+               (query in mag.catalog.lower()) or
                (query in mag.publisher.lower()) or  
                (query in mag.issn.lower()) or
                (query in mag.publication_type.lower())
@@ -189,6 +189,92 @@ def area_detail(area_title):
         next_num=pagination['next_num']
     )
 
+@app.route('/catalogs')
+def catalogs():
+    # Get search parameters
+    query = request.args.get('query', '').lower()
+    initial_letter = request.args.get('letter', '').upper()
+    
+    # Load catalogs from CSV
+    catalog.load_csv('datos/catalogs.csv', cc.Catalogs)
+    all_catalogs = list(catalog.catalogs.values())
+    
+    # Convert to list of dictionaries for template
+    catalogs_list = [{'catalog_title': catalog.catalog, 'num_magazines': 0} for catalog in all_catalogs]  # Starts with 0
+    
+    # Count magazines per catalog
+    catalog.load_csv('datos/magazines.csv', cc.Magazine)
+    for mag in catalog.magazines.values():
+        for cat in catalogs_list:
+            if mag.catalog == cat['catalog_title']:
+                cat['num_magazines'] += 1
+    
+    # Filter by search query
+    if query:
+        catalogs_list = [a for a in catalogs_list if query in a['catalog_title'].lower()]
+    
+    # Filter by initial letter
+    if initial_letter:
+        catalogs_list = [a for a in catalogs_list if a['catalog_title'].upper().startswith(initial_letter)]
+    
+    # Order by area title alphabetically
+    catalogs_list = sorted(catalogs_list, key=lambda x: x['catalog_title'])
+    
+    return render_template('catalogs.html',
+                         username=session.get('username'),
+                         current_user=catalog.current_user,
+                         query=query,
+                         catalogs=catalogs_list,)
+
+@app.route('/catalog/<catalog_title>')
+def catalog_detail(catalog_title):
+    query = request.args.get('query', '').lower()
+    per_page = request.args.get('per_page', default=10, type=int)
+    page = request.args.get('page', default=1, type=int)
+    initial_letter = request.args.get('letter', '').upper()
+
+    # Load magazines from CSV
+    catalog.load_csv('datos/magazines.csv', cc.Magazine)
+    all_magazines = list(catalog.magazines.values())
+
+    # Filter by catalog
+    filtered_magazines = [mag for mag in all_magazines if mag.catalog == catalog_title]
+
+    # Filter by search query
+    if query:
+        filtered_magazines = [
+            mag for mag in filtered_magazines
+            if (query in mag.title.lower()) or 
+               (query in mag.catalog.lower()) or
+               (query in mag.publisher.lower()) or  
+               (query in mag.issn.lower()) or
+               (query in mag.publication_type.lower())
+        ]
+
+    # Filter by initial letter
+    if initial_letter:
+        filtered_magazines = [
+            mag for mag in filtered_magazines
+            if mag.title.upper().startswith(initial_letter)
+        ]
+
+    pagination = paginate(filtered_magazines, page, per_page)
+
+    return render_template('catalog.html',
+        username=session.get('username'),
+        current_user=catalog.current_user,
+        catalog_title=catalog_title,
+        query=query,
+        magazines=pagination['items'],
+        total_magazines=pagination['total_items'],
+        per_page=pagination['per_page'],
+        page=pagination['page'],
+        total_pages=pagination['total_pages'],
+        has_prev=pagination['has_prev'],
+        has_next=pagination['has_next'],
+        prev_num=pagination['prev_num'],
+        next_num=pagination['next_num']
+    )
 
 if __name__ == '__main__':
     app.run(debug=True)

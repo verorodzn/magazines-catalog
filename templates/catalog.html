@@ -23,17 +23,13 @@
         style="max-width: 800px;">
         <!-- Logo and title -->
         <div class="text-center">
-            <div class="d-flex align-items-center justify-content-center gap-3">
-                <i class="ph ph-atom display-4" style="color:#1F2024"></i>
-                <h1>Sci-Archive</h1>
-            </div>
-            <p class="my-3" style="color: #606071;">Una herramienta diseñada para estudiantes, investigadores y
-                docentes que buscan explorar y consultar revistas científicas de calidad</p>
+            <h1>{{ catalog_title }}</h1>
+            <p class="my-3" style="color: #606071;">Explora las revistas especializadas en esta área</p>
         </div>
 
         <!-- Search bar -->
         <div class="w-100 my-3">
-            <form method="GET" action="{{ url_for('home') }}" class="input-group shadow-sm">
+            <form method="GET" action="{{ url_for('catalog_detail', catalog_title=catalog_title) }}" class="input-group shadow-sm">
                 <span class="input-group-text bg-white border-end-0">
                     <i class="ph ph-magnifying-glass"></i>
                 </span>
@@ -70,12 +66,12 @@
      <div class="container mb-4">
         <div class="d-flex flex-wrap justify-content-center gap-2">
             {% for letra in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' %}
-            <a href="{{ url_for('home', letter=letra, query=query) }}"
+            <a href="{{ url_for('catalog_detail', catalog_title=catalog_title, letter=letra, query=query) }}"
                 class="btn btn-sm {% if request.args.get('letter') == letra %}btn-dark{% else %}btn-outline-secondary{% endif %}">
                 {{ letra }}
             </a>
             {% endfor %}
-            <a href="{{ url_for('home', query=query) }}" class="btn btn-sm btn-outline-danger">
+            <a href="{{ url_for('catalog_detail', catalog_title=catalog_title, query=query) }}" class="btn btn-sm btn-outline-danger">
                 Limpiar
             </a>
         </div>
@@ -100,7 +96,7 @@
                 <tr>
                     <th scope="row">{{ magazine.h_index }}</th>
                     <td><a href="/magazine/{{ magazine.h_index }}">{{ magazine.title }}</a></td>
-                    <td><a href="/area/{{ magazine.area }}">{{ magazine.area }}</a></td>
+                    <td><a href="/catalog/{{ magazine.catalog }}">{{ magazine.catalog }}</a></td>
                     <td><a href="/catalog/{{ magazine.catalog }}">{{ magazine.catalog }}</a></td>
                     <td>{{ magazine.publisher }}</td>
                     <td>{{ magazine.issn }}</td>

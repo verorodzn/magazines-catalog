@@ -33,21 +33,21 @@ class Areas:
             'area': self.area
         }
     
-class Categories:
-    def __init__(self, category):
-        self.category = category
+class Catalogs:
+    def __init__(self, catalog):
+        self.catalog = catalog
 
     def to_dict(self):
         return {
-            'category': self.category
+            'catalog': self.catalog
         }
 
 class Magazine:
-    def __init__(self, h_index, title, area, category, publisher, issn, widget, publication_type):
+    def __init__(self, h_index, title, area, catalog, publisher, issn, widget, publication_type):
         self.h_index = h_index
         self.title = title
         self.area = area
-        self.category = category
+        self.catalog = catalog
         self.publisher = publisher
         self.issn = issn
         self.widget = widget
@@ -58,7 +58,7 @@ class Magazine:
             'h_index': self.h_index,
             'title': self.title,
             'area': self.area,
-            'category': self.category,
+            'catalog': self.catalog,
             'publisher': self.publisher,
             'issn': self.issn,
             'widget': self.widget,
@@ -70,7 +70,7 @@ class Catalog:
         self.users = {}
         self.magazines = {}
         self.areas = {}
-        self.categories = {}
+        self.catalogs = {}
         self.current_user = None
     
     def load_csv(self, file, system_class):
@@ -87,9 +87,9 @@ class Catalog:
                 elif system_class == Areas:
                     area = Areas(**row)
                     self.areas[area.area] = area
-                elif system_class == Categories:
-                    category = Categories(**row)
-                    self.categories[category.category] = category
+                elif system_class == Catalogs:
+                    catalog = Catalogs(**row)
+                    self.catalogs[catalog.catalog] = catalog
     
     def login(self, username, password):
         user = self.users.get(username)

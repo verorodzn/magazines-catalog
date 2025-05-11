@@ -62,7 +62,7 @@
             <a class="navbar-brand d-flex align-items-center" href="/" style="gap: 12px;">
                 <i class="ph ph-atom display-6 my-auto" style="font-size: 1.75rem;"></i>
                 <span class="my-auto" style="font-size: 1.5rem; font-weight: normal;">+</span>
-                <img src="static/imgs/unison-logo.svg" alt="Unison Logo" class="my-auto"
+                <img src="{{ url_for('static', filename='imgs/unison-logo.svg') }}" alt="Unison Logo" class="my-auto"
                     style="height: 24px; filter: brightness(0) invert(1);">
             </a>
 
@@ -94,6 +94,7 @@
                             Catálogos
                         </a>
                     </li>
+
 
                     {% if session.get('logged_in') %}
                     <li class="nav-item">
