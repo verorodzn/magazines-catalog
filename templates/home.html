@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Sci-Archive{% endblock %}
+
+{% block body %}
+<style>
+    .pagination .page-item.active .page-link {
+        background-color: #1F2024;
+        border-color: #1F2024;
+        color: white;
+    }
+
+    .pagination .page-link {
+        color: #1F2024;
+    }
+
+    .pagination .page-item:not(.active):hover .page-link {
+        background-color: #f0f0f0;
+    }
+</style>
+
+<div class="container">
+    <div class="container d-flex flex-column justify-content-center align-items-center flex-grow-1"
+        style="max-width: 800px;">
+        <!-- Logo and title -->
+        <div class="text-center">
+            <div class="d-flex align-items-center justify-content-center gap-3">
+                <i class="ph ph-atom display-4" style="color:#1F2024"></i>
+                <h1>Sci-Archive</h1>
+            </div>
+            <p class="my-3" style="color: #606071;">Una herramienta diseñada para estudiantes, investigadores y
+                docentes que buscan explorar y consultar revistas científicas de calidad</p>
+        </div>
+
+        <!-- Search bar -->
+        <div class="w-100 my-3">
+            <form method="GET" action="{{ url_for('home') }}" class="input-group shadow-sm">
+                <span class="input-group-text bg-white border-end-0">
+                    <i class="ph ph-magnifying-glass"></i>
+                </span>
+                <input type="text" name="query" class="form-control border-start-0 py-2"
+                    placeholder="Buscar revistas, artículos..." value="{{ request.args.get('query', '') }}">
+                <button class="btn btn-primary" type="submit" style="background-color: #1F2024; border: none;">
+                    Buscar
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="container row mb-3 align-items-center">
+        {% if query %}
+        <h4 class="my-3">Resultados de "<span class="text-primary">{{ query }}</span>"</h4>
+        {% endif %}
+        <!-- Show # Results -->
+        <div class="col-md-6">
+            <form method="GET" class="d-flex align-items-center form-inline">
+                <label for="per_page" class="me-2">Mostrar:</label>
+                <select name="per_page" id="per_page" class="form-select" onchange="this.form.submit()"
+                    style="width: auto;">
+                    <option value="10" {% if per_page==10 %}selected{% endif %}>10</option>
+                    <option value="50" {% if per_page==50 %}selected{% endif %}>50</option>
+                    <option value="100" {% if per_page==100 %}selected{% endif %}>100</option>
+                </select>
+            </form>
+        </div>
+        <div class="col-md-6 text-md-end">
+            <small class="text-muted">Mostrando {{ magazines|length }} de {{ total_magazines }} revistas</small>
+        </div>
+    </div>
+
+     <div class="container mb-4">
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+            {% for letra in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' %}
+            <a href="{{ url_for('home', letter=letra, query=query) }}"
+                class="btn btn-sm {% if request.args.get('letter') == letra %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+                {{ letra }}
+            </a>
+            {% endfor %}
+            <a href="{{ url_for('home', query=query) }}" class="btn btn-sm btn-outline-danger">
+                Limpiar
+            </a>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="container mt-4">
+        <table class="table table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Título</th>
+                    <th scope="col">Área</th>
+                    <th scope="col">Catálogo</th>
+                    <th scope="col">Editorial</th>
+                    <th scope="col">ISSN</th>
+                    <th scope="col">Tipo</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for magazine in magazines %}
+                <tr>
+                    <th scope="row">{{ magazine.h_index }}</th>
+                    <td><a href="/magazine/{{ magazine.h_index }}">{{ magazine.title }}</a></td>
+                    <td><a href="/area/{{ magazine.area }}">{{ magazine.area }}</a></td>
+                    <td><a href="/catalog/{{ magazine.catalog }}">{{ magazine.catalog }}</a></td>
+                    <td>{{ magazine.publisher }}</td>
+                    <td>{{ magazine.issn }}</td>
+                    <td>{{ magazine.publication_type }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <nav class="container">
+        <ul class="pagination justify-content-end mt-4">
+            {% if has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('home', page=prev_num, per_page=per_page) }}">
+                    <span>&laquo;</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <a class="page-link" href="#">
+                    <span>&laquo;</span>
+                </a>
+            </li>
+            {% endif %}
+
+            {% for p in range(1, total_pages + 1) %}
+            {% if p == page %}
+            <li class="page-item active"><a class="page-link" href="#">{{ p }}</a></li>
+            {% else %}
+            <li class="page-item"><a class="page-link" href="{{ url_for('home', page=p, per_page=per_page) }}">{{ p
+                    }}</a></li>
+            {% endif %}
+            {% endfor %}
+
+            {% if has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('home', page=next_num, per_page=per_page) }}">
+                    <span>&raquo;</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <a class="page-link" href="#">
+                    <span>&raquo;</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endblock %}
