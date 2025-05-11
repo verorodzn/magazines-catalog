@@ -24,9 +24,51 @@ class User:
             'password_hash': self.password_hash
         }
 
+class Areas:
+    def __init__(self, area):
+        self.area = area
+
+    def to_dict(self):
+        return {
+            'area': self.area
+        }
+    
+class Categories:
+    def __init__(self, category):
+        self.category = category
+
+    def to_dict(self):
+        return {
+            'category': self.category
+        }
+
+class Magazine:
+    def __init__(self, h_index, title, area, category, publisher, issn, widget, publication_type):
+        self.h_index = h_index
+        self.title = title
+        self.area = area
+        self.category = category
+        self.publisher = publisher
+        self.issn = issn
+        self.widget = widget
+        self.publication_type = publication_type
+
+    def to_dict(self):
+        return {
+            'h_index': self.h_index,
+            'title': self.title,
+            'area': self.area,
+            'category': self.category,
+            'publisher': self.publisher,
+            'issn': self.issn,
+            'widget': self.widget,
+            'publication_type': self.publication_type
+        }
+
 class Catalog:
     def __init__(self):
         self.users = {}
+        self.magazines = {}
         self.current_user = None
     
     def load_csv(self, file, system_class):
@@ -37,6 +79,15 @@ class Catalog:
                 if system_class == User:
                     user = User(**row)
                     self.users[user.username] = user
+                elif system_class == Magazine:
+                    magazine = Magazine(**row)
+                    self.magazines[magazine.h_index] = magazine
+                elif system_class == Areas:
+                    area = Areas(**row)
+                    self.areas[area.area] = area
+                elif system_class == Categories:
+                    category = Categories(**row)
+                    self.categories[category.category] = category
     
     def login(self, username, password):
         user = self.users.get(username)
