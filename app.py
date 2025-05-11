@@ -79,7 +79,7 @@ def home():
     # Paginate magazines
     pagination = paginate(filtered_magazines, page, per_page)
     
-    return render_template('home.html',
+    return render_template('index.html',
                          username=session.get('username'),
                          current_user=catalog.current_user,
                          query=query,
