@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Sci-Archive{% endblock %}
+
+{% block body %}
+<div class="container">
+    <div class="container d-flex flex-column justify-content-center align-items-center flex-grow-1"
+        style="max-width: 800px;">
+        <!-- Logo and title -->
+        <div class="text-center">
+            <h1>Áreas</h1>
+            <p class="my-3" style="color: #606071;">Navega por las disciplinas científicas y descubre sus publicaciones
+                clave</p>
+        </div>
+
+        <!-- Search bar -->
+        <div class="w-100 my-3">
+            <form method="GET" action="{{ url_for('areas') }}" class="input-group shadow-sm">
+                <span class="input-group-text bg-white border-end-0">
+                    <i class="ph ph-magnifying-glass"></i>
+                </span>
+                <input type="text" name="query" class="form-control border-start-0 py-2" placeholder="Buscar áreas..."
+                    value="{{ request.args.get('query', '') }}">
+                <button class="btn btn-primary" type="submit" style="background-color: #1F2024; border: none;">
+                    Buscar
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="container row mb-3 align-items-center">
+        {% if query %}
+        <h4 class="my-3">Resultados de "<span class="text-primary">{{ query }}</span>"</h4>
+        {% endif %}
+    </div>
+
+    <div class="container mb-3">
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+            {% for letra in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' %}
+            <a href="{{ url_for('areas', letter=letra, query=query) }}"
+                class="btn btn-sm {% if request.args.get('letter') == letra %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+                {{ letra }}
+            </a>
+            {% endfor %}
+            <a href="{{ url_for('areas', query=query) }}" class="btn btn-sm btn-outline-danger">
+                Limpiar
+            </a>
+        </div>
+    </div>
+
+    <!-- Cards -->
+    <div class="container my-5">
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% for area in areas %}
+            <div class="col">
+                <a href="{{ url_for('area_detail', area_title=area.area_title) }}" class="text-decoration-none">
+                    <div class="card area-card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">{{ area.area_title }}</h5>
+                            <p class="card-text text-muted">{{ area.num_magazines }} revista{% if area.num_magazines !=
+                                1 %}s{% endif %}</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

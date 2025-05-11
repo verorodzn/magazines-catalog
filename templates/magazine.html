@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}{{ magazine.title }} | Sci-Archive{% endblock %}
+
+{% block body %}
+
+<style>
+    .custom-badge {
+        background-color: #F8F9FD;
+        border: solid 1px #c4d1de;
+        padding: 0.5em 1em;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .custom-badge:hover {
+        color: #50535A;
+    }
+
+    .spaced-column {
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+
+    @media (max-width: 992px) {
+        .spaced-column {
+            padding-left: 0;
+            padding-right: 0;
+        }
+    }
+</style>
+
+<div class="container py-5">
+    <div class="row justify-content-center gx-5">
+        <!-- Icon Card -->
+        <div class="col-lg-3 mb-5 mb-lg-0 spaced-column">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex justify-content-center align-items-center bg-light rounded p-4"
+                    style="min-height: 180px;">
+                    <i class="ph ph-book-open text-muted" style="font-size: 5rem;"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Magazine's information -->
+        <div class="col-lg-4 spaced-column">
+            <div class="mb-4">
+                <p class="text-muted mb-1">{{ magazine.publication_type }}</p>
+                <h1 class="mb-3" style="font-weight: 400;">{{ magazine.title }}</h1>
+                <div class="d-flex flex-wrap gap-2 justify-content-center justify-content-lg-start">
+                    <a href="/area/{{ magazine.area }}" style="color: #1F2024;">
+                        <span class="custom-badge badge-area">
+                            <i class="ph ph-notebook me-2"></i>
+                            {{ magazine.area }}
+                        </span>
+                    </a>
+                    <a href="/catalog/{{ magazine.catalog }}" style="color: #1F2024;">
+                        <span class="custom-badge badge-catalog">
+                            <i class="ph ph-book-bookmark me-2"></i>
+                            {{ magazine.catalog }}
+                        </span>
+                    </a>
+                </div>
+            </div>
+
+            <dl class="row mt-4">
+                <dt class="col-sm-4">Índice H:</dt>
+                <dd class="col-sm-8">{{ magazine.h_index }}</dd>
+
+                <dt class="col-sm-4">Publisher:</dt>
+                <dd class="col-sm-8">{{ magazine.publisher }}</dd>
+
+                <dt class="col-sm-4">ISSN:</dt>
+                <dd class="col-sm-8">{{ magazine.issn }}</dd>
+            </dl>
+        </div>
+
+        <!-- Widget -->
+        <div class="col-lg-3 spaced-column d-flex align-items-center justify-content-center">
+            {{ magazine.widget }}
+        </div>
+    </div>
+</div>
+{% endblock %}
