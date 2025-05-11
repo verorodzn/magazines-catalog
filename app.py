@@ -276,5 +276,19 @@ def catalog_detail(catalog_title):
         next_num=pagination['next_num']
     )
 
+@app.route('/magazine/<h_index>')
+def magazine_detail(h_index):
+    # Load magazines from CSV
+    catalog.load_csv('datos/magazines.csv', cc.Magazine)
+    magazine = catalog.magazines.get(h_index)
+    
+    if not magazine:
+        return render_template('404.html'), 404
+    
+    return render_template('magazine.html',
+                         username=session.get('username'),
+                         current_user=catalog.current_user,
+                         magazine=magazine)
+
 if __name__ == '__main__':
     app.run(debug=True)
