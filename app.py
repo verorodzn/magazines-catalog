@@ -49,24 +49,36 @@ def logout():
 
 @app.route('/')
 def home():
-    # Get pagination parameters
+    # Get search and pagination parameters
+    query = request.args.get('query', '').lower()
     per_page = request.args.get('per_page', default=10, type=int)
     page = request.args.get('page', default=1, type=int)
-    
-    # Validate pagination parameters
-    per_page = 10 if per_page not in [10, 50, 100] else per_page
-    page = max(1, page)
     
     # Load magazines from CSV
     catalog.load_csv('datos/magazines.csv', cc.Magazine)
     all_magazines = list(catalog.magazines.values())
     
+    # Filter magazines based on search query
+    if query:
+        filtered_magazines = [
+            mag for mag in all_magazines
+            if (query in mag.title.lower()) or 
+               (query in mag.area.lower()) or 
+               (query in mag.category.lower()) or
+               (query in mag.publisher.lower()) or  
+               (query in mag.issn.lower()) or
+               (query in mag.publication_type.lower())
+        ]
+    else:
+        filtered_magazines = all_magazines
+
     # Paginate magazines
-    pagination = paginate(all_magazines, page, per_page)
+    pagination = paginate(filtered_magazines, page, per_page)
     
     return render_template('home.html',
                          username=session.get('username'),
                          current_user=catalog.current_user,
+                         query=query,
                          magazines=pagination['items'],
                          total_magazines=pagination['total_items'],
                          per_page=pagination['per_page'],

@@ -9,9 +9,11 @@
         border-color: #1F2024;
         color: white;
     }
+
     .pagination .page-link {
         color: #1F2024;
     }
+
     .pagination .page-item:not(.active):hover .page-link {
         background-color: #f0f0f0;
     }
@@ -32,21 +34,26 @@
 
         <!-- Search bar -->
         <div class="w-100 my-3">
-            <div class="input-group shadow-sm">
+            <form method="GET" action="{{ url_for('home') }}" class="input-group shadow-sm">
                 <span class="input-group-text bg-white border-end-0">
                     <i class="ph ph-magnifying-glass"></i>
                 </span>
-                <input type="text" id="searchInput" name="search" class="form-control border-start-0 py-2"
-                    placeholder="Buscar revistas, artículos...">
-                <button class="btn btn-primary" type="button" style="background-color: #1F2024; border: none;">
+                <input type="text" name="query" class="form-control border-start-0 py-2"
+                    placeholder="Buscar revistas, artículos..." value="{{ request.args.get('query', '') }}">
+                <button class="btn btn-primary" type="submit" style="background-color: #1F2024; border: none;">
                     Buscar
                 </button>
-            </div>
+            </form>
         </div>
     </div>
 
-    <!-- Show # Results -->
+
     <div class="container row mb-3 align-items-center">
+
+        {% if query %}
+        <h4 class="my-3">Resultados de "<span class="text-primary">{{ query }}</span>"</h4>
+        {% endif %}
+        <!-- Show # Results -->
         <div class="col-md-6">
             <form method="GET" class="d-flex align-items-center form-inline">
                 <label for="per_page" class="me-2">Mostrar:</label>
@@ -98,7 +105,9 @@
         <ul class="pagination justify-content-end mt-4">
             {% if has_prev %}
             <li class="page-item">
-                <a class="page-link" href="{{ url_for('home', page=prev_num, per_page=per_page) }}"></a>
+                <a class="page-link" href="{{ url_for('home', page=prev_num, per_page=per_page) }}">
+                    <span>&laquo;</span>
+                </a>
             </li>
             {% else %}
             <li class="page-item disabled">
