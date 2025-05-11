@@ -69,6 +69,8 @@ class Catalog:
     def __init__(self):
         self.users = {}
         self.magazines = {}
+        self.areas = {}
+        self.categories = {}
         self.current_user = None
     
     def load_csv(self, file, system_class):

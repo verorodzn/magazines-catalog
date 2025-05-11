@@ -100,7 +100,51 @@ def home():
 
 @app.route('/about')
 def about():
-    return render_template('about.html')
+    return render_template('about.html', username=session.get('username'), current_user=catalog.current_user)
+
+@app.route('/areas')
+def areas():
+    # Get search parameters
+    query = request.args.get('query', '').lower()
+    initial_letter = request.args.get('letter', '').upper()
+    
+    # Load areas from CSV
+    catalog.load_csv('datos/areas.csv', cc.Areas)
+    all_areas = list(catalog.areas.values())
+    
+    # Convert to list of dictionaries for template
+    areas_list = [{'area_title': area.area, 'num_magazines': 0} for area in all_areas]  # Starts with 0
+    
+    # Count magazines per area
+    catalog.load_csv('datos/magazines.csv', cc.Magazine)
+    for mag in catalog.magazines.values():
+        for area in areas_list:
+            if mag.area == area['area_title']:
+                area['num_magazines'] += 1
+    
+    # Filter by search query
+    if query:
+        areas_list = [a for a in areas_list if query in a['area_title'].lower()]
+    
+    # Filter by initial letter
+    if initial_letter:
+        areas_list = [a for a in areas_list if a['area_title'].upper().startswith(initial_letter)]
+    
+    # Order by area title alphabetically
+    areas_list = sorted(areas_list, key=lambda x: x['area_title'])
+    
+    return render_template('areas.html',
+                         username=session.get('username'),
+                         current_user=catalog.current_user,
+                         query=query,
+                         areas=areas_list,)
+
+@app.route('/area/<area_title>')
+def area_detail(area_title):
+    return render_template('area.html',
+                         username=session.get('username'),
+                         current_user=catalog.current_user,)
+
 
 if __name__ == '__main__':
     app.run(debug=True)

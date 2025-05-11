@@ -2,7 +2,6 @@
 {% block title %}Sci-Archive{% endblock %}
 
 {% block body %}
-
 <style>
     .pagination .page-item.active .page-link {
         background-color: #1F2024;
@@ -29,7 +28,7 @@
                 <h1>Sci-Archive</h1>
             </div>
             <p class="my-3" style="color: #606071;">Una herramienta diseñada para estudiantes, investigadores y
-                docentes que buscan explorar y consultar revistas científicas de calidad.</p>
+                docentes que buscan explorar y consultar revistas científicas de calidad</p>
         </div>
 
         <!-- Search bar -->
@@ -68,7 +67,7 @@
         </div>
     </div>
 
-     <div class="container mb-3">
+     <div class="container mb-4">
         <div class="d-flex flex-wrap justify-content-center gap-2">
             {% for letra in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' %}
             <a href="{{ url_for('home', letter=letra, query=query) }}"
@@ -153,6 +152,5 @@
             {% endif %}
         </ul>
     </nav>
-
 </div>
 {% endblock %}
