@@ -7,7 +7,7 @@
         style="max-width: 800px;">
         <!-- Logo and title -->
         <div class="text-center">
-            <h1>Áreas</h1>
+            <h1 style="color: #253667;">Áreas</h1>
             <p class="my-3" style="color: #606071;">Navega por las disciplinas científicas y descubre sus publicaciones
                 clave</p>
         </div>
@@ -20,7 +20,7 @@
                 </span>
                 <input type="text" name="query" class="form-control border-start-0 py-2" placeholder="Buscar áreas..."
                     value="{{ request.args.get('query', '') }}">
-                <button class="btn btn-primary" type="submit" style="background-color: #1F2024; border: none;">
+                <button class="btn btn-primary" type="submit" style="background-color: #253667; border: none;">
                     Buscar
                 </button>
             </form>
@@ -37,7 +37,9 @@
         <div class="d-flex flex-wrap justify-content-center gap-2">
             {% for letra in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' %}
             <a href="{{ url_for('areas', letter=letra, query=query) }}"
-                class="btn btn-sm {% if request.args.get('letter') == letra %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+                class="btn btn-sm {% if request.args.get('letter') == letra %}btn-dark{% else %}btn-outline-secondary{% endif %}"
+                {% if request.args.get('letter')==letra
+                %}style="background-color: #253667 !important; border-color: #253667;" {% endif %}>
                 {{ letra }}
             </a>
             {% endfor %}

@@ -4,17 +4,39 @@
 {% block body %}
 <style>
     .pagination .page-item.active .page-link {
-        background-color: #1F2024;
-        border-color: #1F2024;
+        background-color: #253667;
+        border-color: #253667;
         color: white;
     }
 
     .pagination .page-link {
-        color: #1F2024;
+        color: #253667;
     }
 
     .pagination .page-item:not(.active):hover .page-link {
         background-color: #f0f0f0;
+    }
+
+    /* Custom dark background */
+    .bg-dark,
+    .btn-dark {
+        background-color: #253667 !important;
+    }
+
+    /* Custom table header style */
+    .table thead {
+        background-color: #253667;
+        color: white;
+    }
+
+    /* Custom styles for dark buttons */
+    .btn-dark {
+        border-color: #253667;
+    }
+
+    .btn-dark:hover {
+        background-color: #1a2749 !important;
+        border-color: #1a2749;
     }
 </style>
 
@@ -23,19 +45,20 @@
         style="max-width: 800px;">
         <!-- Logo and title -->
         <div class="text-center">
-            <h1>{{ catalog_title }}</h1>
+            <h1 style="color: #253667;">{{ catalog_title }}</h1>
             <p class="my-3" style="color: #606071;">Explora las revistas especializadas en esta área</p>
         </div>
 
         <!-- Search bar -->
         <div class="w-100 my-3">
-            <form method="GET" action="{{ url_for('catalog_detail', catalog_title=catalog_title) }}" class="input-group shadow-sm">
+            <form method="GET" action="{{ url_for('catalog_detail', catalog_title=catalog_title) }}"
+                class="input-group shadow-sm">
                 <span class="input-group-text bg-white border-end-0">
                     <i class="ph ph-magnifying-glass"></i>
                 </span>
                 <input type="text" name="query" class="form-control border-start-0 py-2"
                     placeholder="Buscar revistas, artículos..." value="{{ request.args.get('query', '') }}">
-                <button class="btn btn-primary" type="submit" style="background-color: #1F2024; border: none;">
+                <button class="btn btn-primary" type="submit" style="background-color: #253667; border: none;">
                     Buscar
                 </button>
             </form>
@@ -63,7 +86,7 @@
         </div>
     </div>
 
-     <div class="container mb-4">
+    <div class="container mb-4">
         <div class="d-flex flex-wrap justify-content-center gap-2">
             {% for letra in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' %}
             <a href="{{ url_for('catalog_detail', catalog_title=catalog_title, letter=letra, query=query) }}"
@@ -71,7 +94,8 @@
                 {{ letra }}
             </a>
             {% endfor %}
-            <a href="{{ url_for('catalog_detail', catalog_title=catalog_title, query=query) }}" class="btn btn-sm btn-outline-danger">
+            <a href="{{ url_for('catalog_detail', catalog_title=catalog_title, query=query) }}"
+                class="btn btn-sm btn-outline-danger">
                 Limpiar
             </a>
         </div>
@@ -80,7 +104,7 @@
     <!-- Table -->
     <div class="container mt-4">
         <table class="table table-hover">
-            <thead class="table-dark">
+            <thead>
                 <tr>
                     <th scope="col">#</th>
                     <th scope="col">Título</th>
@@ -96,8 +120,16 @@
                 <tr>
                     <th scope="row">{{ magazine.h_index }}</th>
                     <td><a href="/magazine/{{ magazine.h_index }}">{{ magazine.title }}</a></td>
-                    <td><a href="/area/{{ magazine.area }}">{{ magazine.area }}</a></td>
-                    <td><a href="/catalog/{{ magazine.catalog }}">{{ magazine.catalog }}</a></td>
+                    <td>
+                        {% for area in magazine.areas %}
+                        <a href="/area/{{ area }}">{{ area }}</a>{% if not loop.last %}, {% endif %}
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% for catalog in magazine.catalogs %}
+                        <a href="/catalog/{{ catalog }}">{{ catalog }}</a>{% if not loop.last %}, {% endif %}
+                        {% endfor %}
+                    </td>
                     <td>{{ magazine.publisher }}</td>
                     <td>{{ magazine.issn }}</td>
                     <td>{{ magazine.publication_type }}</td>
@@ -122,30 +154,50 @@
                     <span>&laquo;</span>
                 </a>
             </li>
+            {% endif %} {# First page #}
+            {% if page > 3 %}
+            <li class="page-item"><a class="page-link"
+                    href="{{ url_for('catalog_detail', catalog_title=catalog_title, page=1, per_page=per_page) }}">1</a>
+            </li>
+            {% if page > 4 %}
+            <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+            {% endif %}
             {% endif %}
 
-            {% for p in range(1, total_pages + 1) %}
-            {% if p == page %}
-            <li class="page-item active"><a class="page-link" href="#">{{ p }}</a></li>
-            {% else %}
-            <li class="page-item"><a class="page-link" href="{{ url_for('home', page=p, per_page=per_page) }}">{{ p
-                    }}</a></li>
-            {% endif %}
-            {% endfor %}
+            {# Pages around current page #}
+            {% set start = page - 2 if page - 2 > 0 else 1 %}
+            {% set end = page + 2 if page + 2 < total_pages else total_pages %} {% for p in range(start, end + 1) %} <li
+                class="page-item {% if p == page %}active{% endif %}">
+                <a class="page-link"
+                    href="{% if p != page %}{{ url_for('catalog_detail', catalog_title=catalog_title, page=p, per_page=per_page) }}{% else %}#{% endif %}">{{
+                    p }}</a>
+                </li>
+                {% endfor %}
 
-            {% if has_next %}
-            <li class="page-item">
-                <a class="page-link" href="{{ url_for('home', page=next_num, per_page=per_page) }}">
-                    <span>&raquo;</span>
-                </a>
-            </li>
-            {% else %}
-            <li class="page-item disabled">
-                <a class="page-link" href="#">
-                    <span>&raquo;</span>
-                </a>
-            </li>
-            {% endif %}
+                {# Last page #}
+                {% if page < total_pages - 2 %} {% if page < total_pages - 3 %} <li class="page-item disabled"><a
+                        class="page-link" href="#">...</a></li>
+                    {% endif %}
+                    <li class="page-item">
+                        <a class="page-link"
+                            href="{{ url_for('catalog_detail', catalog_title=catalog_title, page=total_pages, per_page=per_page) }}">{{
+                            total_pages }}</a>
+                    </li>
+                    {% endif %}
+
+                    {% if has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('home', page=next_num, per_page=per_page) }}">
+                            <span>&raquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#">
+                            <span>&raquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
         </ul>
     </nav>
 </div>

@@ -9,7 +9,7 @@ app.secret_key = os.urandom(24)
 # Load users from CSV
 catalog = cc.Catalog()
 catalog.load_csv('datos/users.csv', cc.User)
-catalog.load_csv('datos/magazines.csv', cc.Magazine)
+catalog.load_scimago_json('datos/json/scimago.json')
 
 # Pagination
 def paginate(items, page, per_page):
@@ -55,20 +55,16 @@ def home():
     page = request.args.get('page', default=1, type=int)
     initial_letter = request.args.get('letter', '').upper()
     
-    # Load magazines from CSV
-    catalog.load_csv('datos/magazines.csv', cc.Magazine)
-    all_magazines = list(catalog.magazines.values())
-
-    # Filter magazines based on search query
+    all_magazines = list(catalog.magazines.values())    # Filter magazines based on search query
     if query:
         filtered_magazines = [
             mag for mag in all_magazines
-            if (query in mag.title.lower()) or 
-               (query in mag.area.lower()) or 
-               (query in mag.catalog.lower()) or
-               (query in mag.publisher.lower()) or  
-               (query in mag.issn.lower()) or
-               (query in mag.publication_type.lower())
+            if ((mag.title and query in mag.title.lower()) or 
+                any(area and query in area.lower() for area in (mag.areas or [])) or 
+                any(cat and query in cat.lower() for cat in (mag.catalogs or [])) or
+                (mag.publisher and query in mag.publisher.lower()) or  
+                (mag.issn and query in mag.issn.lower()) or
+                (mag.publication_type and query in mag.publication_type.lower()))
         ]
     else:
         filtered_magazines = all_magazines
@@ -76,10 +72,9 @@ def home():
     # Filter magazines based on initial letter
     if initial_letter:
         filtered_magazines = [
-            mag for mag in filtered_magazines  # Is applied to the filtered list
+            mag for mag in filtered_magazines
             if mag.title.upper().startswith(initial_letter)
         ]
-
 
     # Paginate magazines
     pagination = paginate(filtered_magazines, page, per_page)
@@ -104,23 +99,19 @@ def about():
 
 @app.route('/areas')
 def areas():
-    # Get search parameters
     query = request.args.get('query', '').lower()
     initial_letter = request.args.get('letter', '').upper()
     
-    # Load areas from CSV
-    catalog.load_csv('datos/areas.csv', cc.Areas)
-    all_areas = list(catalog.areas.values())
-    
-    # Convert to list of dictionaries for template
-    areas_list = [{'area_title': area.area, 'num_magazines': 0} for area in all_areas]  # Starts with 0
-    
-    # Count magazines per area
-    catalog.load_csv('datos/magazines.csv', cc.Magazine)
+    # Get unique areas from magazines
+    areas_dict = {}
     for mag in catalog.magazines.values():
-        for area in areas_list:
-            if mag.area == area['area_title']:
-                area['num_magazines'] += 1
+        for area in mag.areas:
+            if area not in areas_dict:
+                areas_dict[area] = {'area_title': area, 'num_magazines': 1}
+            else:
+                areas_dict[area]['num_magazines'] += 1
+    
+    areas_list = list(areas_dict.values())
     
     # Filter by search query
     if query:
@@ -137,7 +128,7 @@ def areas():
                          username=session.get('username'),
                          current_user=catalog.current_user,
                          query=query,
-                         areas=areas_list,)
+                         areas=areas_list)
 
 @app.route('/area/<area_title>')
 def area_detail(area_title):
@@ -146,19 +137,18 @@ def area_detail(area_title):
     page = request.args.get('page', default=1, type=int)
     initial_letter = request.args.get('letter', '').upper()
 
-    # Load magazines from CSV
-    catalog.load_csv('datos/magazines.csv', cc.Magazine)
     all_magazines = list(catalog.magazines.values())
 
     # Filter by area
-    filtered_magazines = [mag for mag in all_magazines if mag.area == area_title]
+    filtered_magazines = [mag for mag in all_magazines if area_title in mag.areas]
 
     # Filter by search query
     if query:
         filtered_magazines = [
             mag for mag in filtered_magazines
             if (query in mag.title.lower()) or 
-               (query in mag.catalog.lower()) or
+               any(query in area.lower() for area in mag.areas) or 
+               any(query in cat.lower() for cat in mag.catalogs) or
                (query in mag.publisher.lower()) or  
                (query in mag.issn.lower()) or
                (query in mag.publication_type.lower())
@@ -191,40 +181,36 @@ def area_detail(area_title):
 
 @app.route('/catalogs')
 def catalogs():
-    # Get search parameters
     query = request.args.get('query', '').lower()
     initial_letter = request.args.get('letter', '').upper()
     
-    # Load catalogs from CSV
-    catalog.load_csv('datos/catalogs.csv', cc.Catalogs)
-    all_catalogs = list(catalog.catalogs.values())
-    
-    # Convert to list of dictionaries for template
-    catalogs_list = [{'catalog_title': catalog.catalog, 'num_magazines': 0} for catalog in all_catalogs]  # Starts with 0
-    
-    # Count magazines per catalog
-    catalog.load_csv('datos/magazines.csv', cc.Magazine)
+    # Get unique catalogs from magazines
+    catalogs_dict = {}
     for mag in catalog.magazines.values():
-        for cat in catalogs_list:
-            if mag.catalog == cat['catalog_title']:
-                cat['num_magazines'] += 1
+        for cat in mag.catalogs:
+            if cat not in catalogs_dict:
+                catalogs_dict[cat] = {'catalog_title': cat, 'num_magazines': 1}
+            else:
+                catalogs_dict[cat]['num_magazines'] += 1
+    
+    catalogs_list = list(catalogs_dict.values())
     
     # Filter by search query
     if query:
-        catalogs_list = [a for a in catalogs_list if query in a['catalog_title'].lower()]
+        catalogs_list = [c for c in catalogs_list if query in c['catalog_title'].lower()]
     
     # Filter by initial letter
     if initial_letter:
-        catalogs_list = [a for a in catalogs_list if a['catalog_title'].upper().startswith(initial_letter)]
+        catalogs_list = [c for c in catalogs_list if c['catalog_title'].upper().startswith(initial_letter)]
     
-    # Order by area title alphabetically
+    # Order by catalog title alphabetically
     catalogs_list = sorted(catalogs_list, key=lambda x: x['catalog_title'])
     
     return render_template('catalogs.html',
                          username=session.get('username'),
                          current_user=catalog.current_user,
                          query=query,
-                         catalogs=catalogs_list,)
+                         catalogs=catalogs_list)
 
 @app.route('/catalog/<catalog_title>')
 def catalog_detail(catalog_title):
@@ -233,22 +219,19 @@ def catalog_detail(catalog_title):
     page = request.args.get('page', default=1, type=int)
     initial_letter = request.args.get('letter', '').upper()
 
-    # Load magazines from CSV
-    catalog.load_csv('datos/magazines.csv', cc.Magazine)
-    all_magazines = list(catalog.magazines.values())
-
-    # Filter by catalog
-    filtered_magazines = [mag for mag in all_magazines if mag.catalog == catalog_title]
+    all_magazines = list(catalog.magazines.values())    # Filter by catalog
+    filtered_magazines = [mag for mag in all_magazines if catalog_title in mag.catalogs]
 
     # Filter by search query
     if query:
         filtered_magazines = [
             mag for mag in filtered_magazines
-            if (query in mag.title.lower()) or 
-               (query in mag.catalog.lower()) or
-               (query in mag.publisher.lower()) or  
-               (query in mag.issn.lower()) or
-               (query in mag.publication_type.lower())
+            if ((mag.title and query in mag.title.lower()) or 
+                any(area and query in area.lower() for area in (mag.areas or [])) or 
+                any(cat and query in cat.lower() for cat in (mag.catalogs or [])) or
+                (mag.publisher and query in mag.publisher.lower()) or  
+                (mag.issn and query in mag.issn.lower()) or
+                (mag.publication_type and query in mag.publication_type.lower()))
         ]
 
     # Filter by initial letter
@@ -278,8 +261,8 @@ def catalog_detail(catalog_title):
 
 @app.route('/magazine/<h_index>')
 def magazine_detail(h_index):
-    # Load magazines from CSV
-    catalog.load_csv('datos/magazines.csv', cc.Magazine)
+    # Load magazines from JSON
+    catalog.load_scimago_json('datos/json/scimago.json')
     magazine = catalog.magazines.get(h_index)
     
     if not magazine:

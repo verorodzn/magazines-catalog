@@ -7,7 +7,7 @@
         style="max-width: 800px;">
         <!-- Logo and title -->
         <div class="text-center">
-            <h1>Catálogos</h1>
+            <h1 style="color: #253667;">Catálogos</h1>
             <p class="my-3" style="color: #606071;">Navega por los catálogos y descubre sus publicaciones
                 clave</p>
         </div>
@@ -18,9 +18,9 @@
                 <span class="input-group-text bg-white border-end-0">
                     <i class="ph ph-magnifying-glass"></i>
                 </span>
-                <input type="text" name="query" class="form-control border-start-0 py-2" placeholder="Buscar catálogos..."
-                    value="{{ request.args.get('query', '') }}">
-                <button class="btn btn-primary" type="submit" style="background-color: #1F2024; border: none;">
+                <input type="text" name="query" class="form-control border-start-0 py-2"
+                    placeholder="Buscar catálogos..." value="{{ request.args.get('query', '') }}">
+                <button class="btn btn-primary" type="submit" style="background-color: #253667; border: none;">
                     Buscar
                 </button>
             </form>
@@ -52,11 +52,13 @@
         <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
             {% for catalog in catalogs %}
             <div class="col">
-                <a href="{{ url_for('catalog_detail', catalog_title=catalog.catalog_title) }}" class="text-decoration-none">
+                <a href="{{ url_for('catalog_detail', catalog_title=catalog.catalog_title) }}"
+                    class="text-decoration-none">
                     <div class="card catalog-card h-100 border-0 shadow-sm">
                         <div class="card-body text-center">
                             <h5 class="card-title">{{ catalog.catalog_title }}</h5>
-                            <p class="card-text text-muted">{{ catalog.num_magazines }} revista{% if catalog.num_magazines !=
+                            <p class="card-text text-muted">{{ catalog.num_magazines }} revista{% if
+                                catalog.num_magazines !=
                                 1 %}s{% endif %}</p>
                         </div>
                     </div>

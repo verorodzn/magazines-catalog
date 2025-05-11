@@ -1,17 +1,18 @@
 '''
 SCRAPPER.PY
-Scrapper de SCImago que lee un JSON con revistas (título —> areas/catalogos) y extrae metadatos.
+Scrapper de SCImago que lee un JSON con revistas (título —> áreas/catalogos) y extrae metadatos.
 COMPLETADO 100% FUNCIONAL YIPPIEEE :3
 '''
 
+import os
 import json
 import logging
 import time
 import random
-from datetime import date, timedelta
-from pathlib import Path
 import argparse
 import requests
+from datetime import date, timedelta
+from pathlib import Path
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 
@@ -19,9 +20,9 @@ from tqdm import tqdm
 # Se utiliza un User-Agent para simular un navegador
 HEADERS = {
     'User-Agent': (
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-      'AppleWebKit/537.36 (KHTML, like Gecko)'
-      'Chrome/58.0.3029.110 Safari/537.3'
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+        'AppleWebKit/537.36 (KHTML, like Gecko)'
+        'Chrome/58.0.3029.110 Safari/537.3'
     )
 }
 
@@ -29,49 +30,71 @@ HEADERS = {
 # para evitar ser bloqueado por el servidor
 THROTTLE_MIN, THROTTLE_MAX = 1, 3
 
+# Configurar logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s: %(message)s'
+)
+
+# Rutas base y JSONs
+BASE_DIR = Path(__file__).resolve().parent
+INPUT_JSON = BASE_DIR / 'datos' / 'json' / 'revistas.json'
+OUTPUT_JSON = BASE_DIR / 'datos' / 'json' / 'scimago.json'
+BACKUP_JSON = BASE_DIR / 'datos' / 'json' / 'scimago_backup.json'
+
+# URLs de SCImagoJR
+SCIMAGO_BASE = 'https://www.scimagojr.com'
+SEARCH_URL = SCIMAGO_BASE + '/journalsearch.php?q='  # Buscador de SCImago
+
+
 def parse_args():
-    parser = argparse.ArgumentParser(description='Scrapper de SCImago')
-    parser.add_argument(
-        '--input', default = 'datos/json/revistas.json',
-        help = 'Ruta al archivo JSON con revistas (título —> áreas/catalogos)'
-    )
-    parser.add_argument(
-        '--output', default = 'datos/json/scimago.json',
-        help = 'Ruta al archivo JSON de salida con datos de Scimago'
-    )
-    parser.add_argument(
-        '--expire', type = int, default = 30,
-        help = 'Días para considerar una entrada desactualizada y volver a scrapearla'
-    )
-    parser.add_argument(
-        '--max_retries', type = int, default = 5,
-        help = 'Número máximo de intentos ante errores temporales'
-    )
+    """
+    Configura y parsea los argumentos de línea de comandos:
+      --inicio: índice para comenzar procesamiento
+      --fin: índice donde terminar
+      --reverso: procesar en orden inverso
+      --expire: días antes de re-scrapear
+      --max_retries: reintentos ante errores HTTP
+    """
+    parser = argparse.ArgumentParser(description='Scraper de SCImago mejorado')
+    parser.add_argument('--inicio', type=int, default=0,
+                        help='Índice desde donde empezar (default: 0)')
+    parser.add_argument('--fin', type=int,
+                        help='Índice donde terminar (opcional)')
+    parser.add_argument('--reverso', action='store_true',
+                        help='Procesar en orden inverso')
+    parser.add_argument('--expire', type=int, default=30,
+                        help='Días antes de re-scrapeo (default: 30)')
+    parser.add_argument('--max_retries', type=int, default=5,
+                        help='Reintentos ante fallos HTTP')
     return parser.parse_args()
+
 
 def load_json(path: Path) -> dict:
     '''Carga un archivo JSON y lo convierte en un diccionario.'''
-    # Si el archivo no existe, devuelve un diccionario vacío
-    # Si existe, lo carga y lo devuelve
     if path.exists():
-        with path.open(encoding='utf-8') as f:
+        with path.open('r', encoding='utf-8') as f:
             return json.load(f)
     return {}
 
 
-def save_json(data: dict, path: Path) -> None:
-    '''Guarda un diccionario en un archivo JSON.'''
-    # Crea el directorio si no existe
-    # y guarda el archivo en formato JSON
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open('w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+def save_data_safely(data: dict) -> bool:
+    '''Guarda datos en el JSON principal y en un backup.'''
+    try:
+        # Primero guardamos en backup
+        with open(BACKUP_JSON, 'w', encoding='utf-8') as bkp:
+            json.dump(data, bkp, indent=2, ensure_ascii=False)
+        # Luego sobrescribimos archivo principal
+        with open(OUTPUT_JSON, 'w', encoding='utf-8') as out:
+            json.dump(data, out, indent=2, ensure_ascii=False)
+        return True
+    except Exception as e:
+        logging.error(f'Error al guardar datos: {e}')
+        return False
 
 
 def should_update(entry: dict, days: int) -> bool:
-    '''Determina si la entrada debe ser actualizada.'''
-    # Si no hay fecha de última visita, se considera que debe actualizarse
-    # Si la fecha de última visita es mayor a los días especificados, se considera que debe actualizarse
+    '''Determina si una entrada cacheada debe actualizarse.'''
     ultima = entry.get('ultima_visita')
     if not ultima:
         return True
@@ -81,105 +104,148 @@ def should_update(entry: dict, days: int) -> bool:
         return True
     return (date.today() - ultima_fecha) > timedelta(days=days)
 
-def get_with_retries(url: str, max_tries: int) -> requests.Response:
-    '''Realiza una solicitud HTTP con reintentos ante errores temporales.'''
+
+def scrap(url: str, retries: int) -> requests.Response:
+    '''Realiza GET con reintentos y exponencial backoff.'''
     delay = 1.0
-    for intento in range(1, max_tries + 1):
+    for i in range(1, retries + 1):
         try:
             resp = requests.get(url, headers=HEADERS, timeout=15)
             resp.raise_for_status()
             return resp
-        except requests.exceptions.HTTPError as e:
-            status = getattr(e.response, 'status_code', None)
-            # Si es 503 y aún quedan intentos, esperamos y reintentamos
-            if status == 503 and intento < max_tries:
-                logging.warning(f'503 en {url}, retry {intento}/{max_tries} tras {delay:.1f}s')
-                time.sleep(delay)
-                delay *= 2
-                continue
-            raise
-        except requests.exceptions.RequestException as e:
-            # Para otros fallos de red, si hay intentos restantes
-            if intento < max_tries:
-                logging.warning(f'Error red en {url}: {e}, retry {intento}/{max_tries} tras {delay:.1f}s')
+        except Exception as e:
+            if i < retries:
+                logging.warning(f'Error en {url}: {e}, retry {i}/{retries}')
                 time.sleep(delay)
                 delay *= 2
                 continue
             raise
 
-def scrape_revista(titulo: str, max_retries: int) -> dict:
-    '''Scrapea datos de SCImago para la revista dada.'''
-    # Throttle para evitar ser bloqueado
-    time.sleep(random.uniform(THROTTLE_MIN, THROTTLE_MAX))
-    # Buscador de SCImago
-    query = requests.utils.quote(titulo)
-    url_busqueda = f'https://www.scimagojr.com/journalsearch.php?q={query}'
-    resp = get_with_retries(url_busqueda, max_retries)
+
+def find_journal_url(title: str, retries: int) -> str | None:
+    '''Busca y devuelve la URL del perfil de la revista en ScimagoJR.'''
+    search = SEARCH_URL + requests.utils.quote(title)
+    resp = scrap(search, retries)
     soup = BeautifulSoup(resp.text, 'html.parser')
-    enlace = soup.select_one('a[href*="journal.php?"]')
-    if not enlace or 'href' not in enlace.attrs:
-        logging.warning(f'No perfil para "{titulo}"')
-        return {}
-    # Extrae el enlace al perfil de la revista
-    perfil_url = 'https://www.scimagojr.com/' + enlace['href']
-    perfil_resp = get_with_retries(perfil_url, max_retries)
-    psoup = BeautifulSoup(perfil_resp.text, 'html.parser')
+    # Selecciona primer resultado: <span class="jrnlname">
+    link = soup.select_one('span.jrnlname')
+    if link:
+        return SCIMAGO_BASE + '/' + link.find_parent('a')['href']
+    return None
+
+
+def extract_subject_area(soup: BeautifulSoup) -> list[str] | None:
+    '''Extrae áreas temáticas y categorías de la tabla bajo el header correspondiente.'''
+    section = soup.find('h2', string='Subject Area and Category')
+    if not section:
+        return None
+    table = section.find_next('table')
+    if not table:
+        return None
+    return [td.get_text(strip=True) for td in table.find_all('td')]
+
+
+def obtener_imagen(soup: BeautifulSoup) -> str | None:
+    '''Obtiene URL de la imagen del widget (class="imgwidget").'''
+    img = soup.find('img', class_='imgwidget')
+    if img and img.get('src'):
+        return SCIMAGO_BASE + '/' + img['src']
+    return None
+
+
+def scrape_journal_data(url: str, retries: int) -> dict:
+    '''Scrapea metadatos (H-index, ISSN, Publisher, etc.) de una revista.'''
+    # Throttle aleatorio
+    time.sleep(random.uniform(THROTTLE_MIN, THROTTLE_MAX))
+    resp = scrap(url, retries)
+    soup = BeautifulSoup(resp.text, 'html.parser')
+
+    def get_text_by_header(label: str) -> str | None:
+        hdr = soup.find('h2', string=lambda s: s and label in s)
+        return hdr.find_next_sibling('p').get_text(strip=True) if hdr else None
+
+    datos = {
+        'sitio_web': None,
+        'h_index': None,
+        'subject_areas': None,
+        'publisher': None,
+        'issn': None,
+        'widget': None,
+        'publication_type': None,
+        'area': None,
+        'catalogo': None,
+        'ultima_visita': date.today().isoformat(),
+    }
+    # Extraer H-index
+    try:
+        datos['h_index'] = int(get_text_by_header('H-Index') or 0)
+    except:
+        pass
+    # Homepage
+    datos['sitio_web'] = soup.find('a', string='Homepage') and soup.find('a', string='Homepage')['href']
+    # Publisher
+    datos['publisher'] = get_text_by_header('Publisher')
+    # ISSN
+    datos['issn'] = get_text_by_header('ISSN')
+    # Publication type
+    datos['publication_type'] = get_text_by_header('Publication type')
+    # Subject areas
+    datos['subject_areas'] = extract_subject_area(soup)
+    # Imagen widget
+    datos['widget'] = obtener_imagen(soup)
+
+    # Extraer Área y Catálogo
+    try:
+        area_section = soup.find('h2', string='Area')
+        if area_section:
+            datos['area'] = area_section.find_next_sibling('p').get_text(strip=True)
+    except:
+        pass
 
     try:
-        # Extrae los datos del perfil de la revista
-        datos = {
-            'sitio_web'             : psoup.select_one('a.journalImageLink')['href'],
-            'h_index'               : int(psoup.select_one('.hindex .value').text.strip()),
-            'subject_areas'         : [e.text.strip() for e in psoup.select('.subject_area .category')],
-            'publisher'             : psoup.select_one('.publisher .value').text.strip(),
-            'issn'                  : psoup.select_one('.issn .value').text.strip(),
-            'widget'                : psoup.select_one('#widget_code').text.strip(),
-            'publication_type'      : psoup.select_one('.pub_type .value').text.strip(),
-            'ultima_visita'         : date.today().isoformat(),
-        }
-        return datos
-    except Exception as e:
-        # Si ocurre un error al parsear el perfil, se registra el error y se devuelve un diccionario vacío
-        logging.error(f'Error parseando perfil de {titulo}: {e}')
-        return {}
+        catalogo_section = soup.find('h2', string='Catalog')
+        if catalogo_section:
+            datos['catalogo'] = catalogo_section.find_next_sibling('p').get_text(strip=True)
+    except:
+        pass
+
+    return datos
+
 
 def main():
-    '''Función principal del scrapper.'''
+    '''Función principal que orquesta la carga, scraping y guardado.'''
     args = parse_args()
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s %(levelname)s: %(message)s'
-    )
+    base = load_json(INPUT_JSON)
+    cache = load_json(OUTPUT_JSON)
 
-    input_path = Path(args.input)
-    output_path = Path(args.output)
+    items = list(base.keys())
+    if args.reverso:
+        items = items[::-1]
+    fin = args.fin or len(items)
+    todos = items[args.inicio:fin]
 
-    base = load_json(input_path)
-    logging.info(f'Cargadas {len(base)} revistas desde {input_path}')
-
-    # Si el archivo de salida no existe, se crea un diccionario vacío
-    cache = load_json(output_path)
-
-    for titulo in tqdm(base.keys(), desc='Revistas'):
-        # Si el título ya está en el cache y no ha expirado, se omite
-        # Si el título no está en el cache, se scrapea
+    logging.info(f'Procesando revistas {args.inicio} a {fin}, total: {len(todos)}')
+    processed = 0
+    for titulo in tqdm(todos, desc='Revistas'):
         key = titulo.lower().strip()
+        # Salta si ya existe y no expiró
         if key in cache and not should_update(cache[key], args.expire):
             continue
-        try:
-            resultado = scrape_revista(titulo, args.max_retries)
-        except Exception as e:
-            logging.warning(f'Salteando "{titulo}" tras errores: {e}')
+        # Buscar URL
+        url = find_journal_url(titulo, args.max_retries)
+        if not url:
+            logging.warning(f'No perfil para {titulo}')
             continue
-        # Si el resultado es un diccionario vacío, se omite
-        # Si el resultado es un diccionario con datos, se guarda
-        if resultado:
-            # Si se scrapeó con éxito, se actualiza el cache
-            cache[key] = resultado
-            save_json(cache, output_path)
+        try:
+            data = scrape_journal_data(url, args.max_retries)
+            cache[key] = data
+            save_data_safely(cache)
+            processed += 1
+        except Exception as e:
+            logging.warning(f'Error scraping {titulo}: {e}')
+            continue
 
-    logging.info('Scraping completado.')
-
+    logging.info(f'Completado. Nuevos: {processed}')
 
 if __name__ == '__main__':
     # Al ejecutar, se llama a la función principal

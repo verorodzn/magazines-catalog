@@ -5,7 +5,7 @@ import os
 def crear_diccionario_revistas(carpeta_csv_areas, carpeta_csv_catalogos, archivo_salida_json):
     revistas = {}
 
-    # Leer los archibos de "áreas" :o
+    # Leer los archivos de "áreas" :o
     for archivo in os.listdir(carpeta_csv_areas):
         if archivo.endswith('.csv'):
             ruta_archivo = os.path.join(carpeta_csv_areas, archivo)

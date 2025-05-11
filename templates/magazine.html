@@ -46,38 +46,40 @@
         <div class="col-lg-4 spaced-column">
             <div class="mb-4">
                 <p class="text-muted mb-1">{{ magazine.publication_type }}</p>
-                <h1 class="mb-3" style="font-weight: 400;">{{ magazine.title }}</h1>
+                <h1 class="mb-3" style="font-weight: 400; color: #253667;">{{ magazine.title }}</h1>
                 <div class="d-flex flex-wrap gap-2 justify-content-center justify-content-lg-start">
-                    <a href="/area/{{ magazine.area }}" style="color: #1F2024;">
+                    {% for area in magazine.areas %} <a href="/area/{{ area }}" style="color: #253667;">
                         <span class="custom-badge badge-area">
                             <i class="ph ph-notebook me-2"></i>
-                            {{ magazine.area }}
+                            {{ area }}
                         </span>
                     </a>
-                    <a href="/catalog/{{ magazine.catalog }}" style="color: #1F2024;">
+                    {% endfor %}
+                    {% for catalog in magazine.catalogs %} <a href="/catalog/{{ catalog }}" style="color: #253667;">
                         <span class="custom-badge badge-catalog">
                             <i class="ph ph-book-bookmark me-2"></i>
-                            {{ magazine.catalog }}
+                            {{ catalog }}
                         </span>
                     </a>
+                    {% endfor %}
                 </div>
             </div>
 
             <dl class="row mt-4">
-                <dt class="col-sm-4">Índice H:</dt>
+                <dt class="col-sm-4" style="color: #253667;">Índice H:</dt>
                 <dd class="col-sm-8">{{ magazine.h_index }}</dd>
 
-                <dt class="col-sm-4">Publisher:</dt>
+                <dt class="col-sm-4" style="color: #253667;">Publisher:</dt>
                 <dd class="col-sm-8">{{ magazine.publisher }}</dd>
 
-                <dt class="col-sm-4">ISSN:</dt>
+                <dt class="col-sm-4" style="color: #253667;">ISSN:</dt>
                 <dd class="col-sm-8">{{ magazine.issn }}</dd>
             </dl>
         </div>
 
         <!-- Widget -->
         <div class="col-lg-3 spaced-column d-flex align-items-center justify-content-center">
-            {{ magazine.widget }}
+            <img src="{{ magazine.widget }}" alt="Magazine's widget">
         </div>
     </div>
 </div>
