@@ -98,5 +98,9 @@ def home():
                          prev_num=pagination['prev_num'],
                          next_num=pagination['next_num'])
 
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
 if __name__ == '__main__':
     app.run(debug=True)
