@@ -14,9 +14,9 @@ Flask application that processes scientific journals from CSV files, enriches da
     pip install requests beautifulsoup4 tqdm
     
 # Integrantes
-Rodriguez Navarro Veronica
-Rivera Escoboza Alanis
-Hernandez Moroyoqui José Antonio
+- Rodriguez Navarro Veronica
+- Rivera Escoboza Alanis
+- Hernandez Moroyoqui José Antonio
 
 # Uso de IA
 Durante el desarrollo de nuestro programa se incorporó el uso de herramientas de inteligencia artificial, específicamente GitHub Copilot. Esta tecnología fue empleada para apoyar la solución de ciertos errores puntuales y también como fuente de inspiración en la estructuración del código. Su implementación facilitó el proceso de desarrollo al ofrecer sugerencias relevantes y mejorar la eficiencia en la escritura del código, sin sustituir el criterio y la intervención directa del equipo de trabajo.
