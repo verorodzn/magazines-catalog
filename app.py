@@ -53,11 +53,12 @@ def home():
     query = request.args.get('query', '').lower()
     per_page = request.args.get('per_page', default=10, type=int)
     page = request.args.get('page', default=1, type=int)
+    initial_letter = request.args.get('letter', '').upper()
     
     # Load magazines from CSV
     catalog.load_csv('datos/magazines.csv', cc.Magazine)
     all_magazines = list(catalog.magazines.values())
-    
+
     # Filter magazines based on search query
     if query:
         filtered_magazines = [
@@ -71,6 +72,14 @@ def home():
         ]
     else:
         filtered_magazines = all_magazines
+
+    # Filter magazines based on initial letter
+    if initial_letter:
+        filtered_magazines = [
+            mag for mag in filtered_magazines  # Is applied to the filtered list
+            if mag.title.upper().startswith(initial_letter)
+        ]
+
 
     # Paginate magazines
     pagination = paginate(filtered_magazines, page, per_page)

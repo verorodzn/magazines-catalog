@@ -47,9 +47,7 @@
         </div>
     </div>
 
-
     <div class="container row mb-3 align-items-center">
-
         {% if query %}
         <h4 class="my-3">Resultados de "<span class="text-primary">{{ query }}</span>"</h4>
         {% endif %}
@@ -67,6 +65,20 @@
         </div>
         <div class="col-md-6 text-md-end">
             <small class="text-muted">Mostrando {{ magazines|length }} de {{ total_magazines }} revistas</small>
+        </div>
+    </div>
+
+     <div class="container mb-3">
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+            {% for letra in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' %}
+            <a href="{{ url_for('home', letter=letra, query=query) }}"
+                class="btn btn-sm {% if request.args.get('letter') == letra %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+                {{ letra }}
+            </a>
+            {% endfor %}
+            <a href="{{ url_for('home', query=query) }}" class="btn btn-sm btn-outline-danger">
+                Limpiar
+            </a>
         </div>
     </div>
 
