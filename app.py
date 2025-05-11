@@ -141,9 +141,53 @@ def areas():
 
 @app.route('/area/<area_title>')
 def area_detail(area_title):
+    query = request.args.get('query', '').lower()
+    per_page = request.args.get('per_page', default=10, type=int)
+    page = request.args.get('page', default=1, type=int)
+    initial_letter = request.args.get('letter', '').upper()
+
+    # Load magazines from CSV
+    catalog.load_csv('datos/magazines.csv', cc.Magazine)
+    all_magazines = list(catalog.magazines.values())
+
+    # Filter by area
+    filtered_magazines = [mag for mag in all_magazines if mag.area == area_title]
+
+    # Filter by search query
+    if query:
+        filtered_magazines = [
+            mag for mag in filtered_magazines
+            if (query in mag.title.lower()) or 
+               (query in mag.category.lower()) or
+               (query in mag.publisher.lower()) or  
+               (query in mag.issn.lower()) or
+               (query in mag.publication_type.lower())
+        ]
+
+    # Filter by initial letter
+    if initial_letter:
+        filtered_magazines = [
+            mag for mag in filtered_magazines
+            if mag.title.upper().startswith(initial_letter)
+        ]
+
+    pagination = paginate(filtered_magazines, page, per_page)
+
     return render_template('area.html',
-                         username=session.get('username'),
-                         current_user=catalog.current_user,)
+        username=session.get('username'),
+        current_user=catalog.current_user,
+        area_title=area_title,
+        query=query,
+        magazines=pagination['items'],
+        total_magazines=pagination['total_items'],
+        per_page=pagination['per_page'],
+        page=pagination['page'],
+        total_pages=pagination['total_pages'],
+        has_prev=pagination['has_prev'],
+        has_next=pagination['has_next'],
+        prev_num=pagination['prev_num'],
+        next_num=pagination['next_num']
+    )
 
 
 if __name__ == '__main__':
